@@ -132,8 +132,9 @@ static void homePage(BufferFiller& buf) {
             word n = msgs_rcvd - NUM_MESSAGES + i;
             buf.emit_p(PSTR("\n$D$D$D$D: OK"), // hack, to show leading zero's
                                 n/1000, (n/100) % 10, (n/10) % 10, n % 10);
-            for (byte k = 0; k < history_len[j]; ++k)      //k is start to end of length of message 
-                buf.emit_p(PSTR(" $D"), history_rcvd[j][k]); //PSTR returns length of string 
+            //for (byte k = 0; k < history_len[j]; ++k)      //k is start to end of length of message 
+               //buf.emit_p(PSTR(" $D"), history_rcvd[j][k]); //PSTR returns length of string 
+              buf.emit_p(PSTR(" Power: $D  Temp: $D"), measurement[i].power, measurement[i].temp); //PSTR returns length of string 
                 
       //buf.emit_p(PSTR(" $D$D$D$D$D"),measurement[i].power);
       
@@ -311,7 +312,7 @@ void loop(){
                                                          : MESSAGE_TRUNC+1;
                 next_msg = (next_msg + 1) % NUM_MESSAGES;         //increment next_untill its is equall to num_messages (currently 10)  then reset to 0
                 msgs_rcvd = (msgs_rcvd + 1) % 10000;              //incrment number of messages received 
-                Serial.print(measurement[next_msg].power); 
+                //Serial.print(measurement[next_msg].power); 
 
         if (RF12_WANTS_ACK && !config.collect) {
             Serial.println(" -> ack");
@@ -328,3 +329,6 @@ void loop(){
         outCount = -1;
     }
 }
+
+
+
