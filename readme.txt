@@ -8,9 +8,12 @@
 networked application node
 **************************
 
+Builds on JeeLabs software 
 -----------------------------------------------
-Download the EtherCard library here:
+Download the EtherCard, Ports and RF12 library here (insert into Arduino librarys folder):
 http://jeelabs.net/projects/cafe/wiki/EtherCard
+http://jeelabs.net/projects/cafe/wiki/Ports
+http://jeelabs.net/projects/cafe/wiki/RF12
 -----------------------------------------------
 
 This repo contains the code to allow RFM12 RF chip to be used in conjunction with the ENC28J60 Ethernet chip. The both use the SPI bus therefore carefull control of slave-select lines is needed.
