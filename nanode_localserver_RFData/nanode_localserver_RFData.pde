@@ -126,38 +126,15 @@ static void homePage(BufferFiller& buf) {
         "<h3>Last $D messages:</h3>"
         "<pre>"), okHeader, config.refresh, mhz, config.group,
                                             mhz, config.group, NUM_MESSAGES);
-    for (byte i = 0; i < NUM_MESSAGES; ++i) {
-        byte j = (next_msg + i) % NUM_MESSAGES;    //j is message number 
-        if (history_len[j] > 0) {
-            word n = msgs_rcvd - NUM_MESSAGES + i;
-            buf.emit_p(PSTR("\n$D$D$D$D: OK"), // hack, to show leading zero's
-                                n/1000, (n/100) % 10, (n/10) % 10, n % 10);
-            //for (byte k = 0; k < history_len[j]; ++k)      //k is start to end of length of message 
-               //buf.emit_p(PSTR(" $D"), history_rcvd[j][k]); //PSTR returns length of string 
-              buf.emit_p(PSTR(" Power: $D  Temp: $D"), measurement[i].power, measurement[i].temp); //PSTR returns length of string 
-                
-      //buf.emit_p(PSTR(" $D$D$D$D$D"),measurement[i].power);
-      
- Serial.print(measurement[i].power);    
-Serial.print(" ");
-Serial.println(measurement[i].temp);
-      
-      //buf.emit_p(PSTR(" $"));
-      
-     // char str[6]="hello";
+  
 
-     // CharToByte(str,str_byte,6);
-      //str_byte=str;
-    
-      //strcat(str,doubleString(measurement[i].power, 2));
-      //strcat(str,'\0');
-     //);
+        buf.emit_p(PSTR(" Power: $D  Temp: $D"), measurement.power, measurement.temp); //PSTR returns length of string 
+        
       
-      //buf.emit_p(PSTR(str));
-     // buf.emit_p(PSTR("$D"),str_byte);
+    Serial.print(measurement.power);    
+    Serial.print(" ");
+    Serial.println(measurement.temp);
       
-      }
-    }
   
     long t = millis() / 1000;
     word h = t / 3600;
@@ -302,7 +279,9 @@ void loop(){
     }
 
     // RFM12 loop runner, don't report acks
-    if (rf12_recvDone() && rf12_crc == 0 && (rf12_hdr & RF12_HDR_CTL) == 0  ) {   
+    if (rf12_recvDone() && rf12_crc == 0 && (rf12_hdr & RF12_HDR_CTL) == 0  ) {
+    
+      
         history_rcvd[next_msg][0] = rf12_hdr;
         for (byte i = 0; i < rf12_len; ++i)
             if (i < MESSAGE_TRUNC) 
