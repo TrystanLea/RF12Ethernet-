@@ -1,3 +1,18 @@
+                               _      
+                              | |     
+ _ __   __ _   _ __   ___   __| | ___ 
+| '_ \ / _` | | '_ \ / _ \ / _` |/ _ \
+| | | | (_| | | | | | (_) | (_| |  __/
+|_| |_|\__,_| |_| |_|\___/ \__,_|\___|
+                                                  
+networked application node
+**************************
+
+-----------------------------------------------
+Download the EtherCard library here:
+http://jeelabs.net/projects/cafe/wiki/EtherCard
+-----------------------------------------------
+
 This repo contains the code to allow RFM12 RF chip to be used in conjunction with the ENC28J60 Ethernet chip. The both use the SPI bus therefore carefull control of slave-select lines is needed.
 
 In these example we assume RFM12 on SS line digital 10
