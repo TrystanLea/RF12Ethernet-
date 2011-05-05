@@ -1,6 +1,18 @@
+//                              _      
+//                             | |     
+//  _ __   __ _ _ __   ___   __| | ___ 
+// | '_ \ / _` | '_ \ / _ \ / _` |/ _ \
+// | | | | (_| | | | | (_) | (_| |  __/
+// |_| |_|\__,_|_| |_|\___/ \__,_|\___|
+                                    
+//EMONBASE V1
+//GNU GPL V3
+//openenergymonitor.org
+//************************************
+
 #include <EtherCard.h>
 #include <Ports.h>
-#include <RF12.h> // needed to avoid a linker error :(
+#include <RF12.h>
 
 // ethernet interface mac address
 static byte mymac[6] = { 0x54,0x55,0x58,0x10,0x00,0x26 };
@@ -20,16 +32,21 @@ static word hisport = 80;
 //########################################################################################################################
 //Data Structure to be received 
 //########################################################################################################################
-typedef struct {              //data structure to be received, must be same as on transmitter 
-  int temp;
-  int power;
-} Payload;
-Payload measurement; 
+typedef struct {
+  	  int ct1;		// current transformer 1
+	  int ct2;		// current transformer 2
+	  int nPulse;		// number of pulses recieved since last update
+	  int temp1;		// One-wire temperature 1
+	  int temp2;		// One-wire temperature 2
+	  int temp3;		// One-wire temperature 3
+	  int voltage;		// emontx voltage
+
+	} Payload;
+	Payload emontx;
 //########################################################################################################################
 
 EtherCard eth;
 MilliTimer requestTimer;
-int test=1767;
 
 static BufferFiller bufill;
 
@@ -38,17 +55,16 @@ static byte buf[300];   // a very small tcp/ip buffer is enough here
 // called to fill in a request to send out to the client
 static word my_datafill_cb (byte fd) {
     BufferFiller bfill = eth.tcpOffset(buf);
+    //--------------------------------------------------------------
+    // API URL
+    //--------------------------------------------------------------
     bfill.emit_p(PSTR("GET /emoncms/api/api.php?json="));
-    
     //--------------------------------------------------------------
     // JSON Data to send
     //--------------------------------------------------------------
-    
-    int power = 250;
-    bfill.emit_p(PSTR("{nanode_power:$D}{nanode_temp:$D"),measurement.power), measurement.temp;
-    
-    //-------------------------------------------------------------- 
+    bfill.emit_p(PSTR("{emontx_ctA:$D,emontx_ctB:$D,nPulse:$D,temp1:$D}"),emontx.ct1, emontx.ct2, emontx.nPulse, emontx.temp1);
     bfill.emit_p(PSTR(" HTTP/1.1\r\n" "Host: localhost\r\n" "\r\n"));
+    
     return bfill.position();
 }
 
@@ -60,9 +76,12 @@ static byte my_result_cb (byte fd, byte status, word off, word len) {
     return 0;
 }
 
+//--------------------------------------------------------------------
+// SETUP
+//--------------------------------------------------------------------
 void setup () {
     Serial.begin(57600);
-    Serial.println("\n[getStaticIP]");
+    Serial.println("Nanode: emontx relay");
     
     eth.spiInit();
     eth.initialize(mymac);
@@ -71,10 +90,9 @@ void setup () {
     eth.clientSetServerIp(hisip);
     
     rf12_initialize(MYNODE, freq,group);
-    
+  
     requestTimer.set(1); // send first request as soon as possible
-    
-    }
+}
     
 char okHeader[] PROGMEM = 
     "HTTP/1.0 200 OK\r\n"
@@ -82,24 +100,27 @@ char okHeader[] PROGMEM =
     "Pragma: no-cache\r\n"
     ;
 
-
+//--------------------------------------------------------------------
+// Generate the local webpage
+//--------------------------------------------------------------------
 static void homePage(BufferFiller& buf) {
-   buf.emit_p(PSTR("$F\r\n"
-   "<html><head></head><body style='background-color: #eee;'><div style='width: 800px; height:800px; background-color: #fff; border-width: 0px;"
-   "-moz-border-radius: 7px; border-radius: 7px; padding:20px;'><img src='http://dev.openenergymonitor.org/nanode.png' style='width:200px;' />"
-   "Power: $D  Temperature:$D"
-   "<iframe id='testG' style='width:100%; height:500px;' frameborder='0' scrolling='no' marginheight='0' marginwidth='0' src='http://192.168.1.5/emoncms/vis/igraph.php?tableid=17&price=0.12'></iframe>"
-   "</div></body></html>"),okHeader,measurement.power,measurement.temp);
+   buf.emit_p(PSTR("$F\r\nRelaying JSON: {emontx_ctA:$D,emontx_ctB:$D,nPulse:$D,temp1:$D}"),okHeader,emontx.ct1, emontx.ct2, emontx.nPulse, emontx.temp1);
 }
 
+//--------------------------------------------------------------------
+// MAIN LOOP
+//--------------------------------------------------------------------
 void loop () {
     word len = eth.packetReceive(buf, sizeof buf);
     word pos = eth.packetLoop(buf, len);
- 
+
+    //--------------------------------------------------------------------
+    // 3) Serve a local web page
+    //--------------------------------------------------------------------
     if (pos) {
-      bufill = eth.tcpOffset(buf);
-      char* data = (char *) buf + pos;
-      Serial.println(data);
+       bufill = eth.tcpOffset(buf);
+       char* data = (char *) buf + pos;
+       Serial.println(data);
 
        //receive buf hasn't been clobbered by reply yet
        if (strncmp("GET / ", data, 6) == 0) homePage(bufill); 
@@ -107,21 +128,18 @@ void loop () {
        eth.httpServerReply(buf,bufill.position()); // send web page data
     }
        
-       
-    // Receive data from RFM12
-    //if (rf12_recvDone() && rf12_crc == 0 && (rf12_hdr & RF12_HDR_CTL) == 0  )  
-       if (rf12_recvDone() && rf12_crc == 0 && rf12_len==sizeof(Payload) ) {
-        measurement=*(Payload*) rf12_data;      //decode packet binary data into known data structure (same as Tx) http://jeelabs.org/2010/12/08/binary-packet-decoding-%E2%80%93-part-2/
-        Serial.print("Data: "); Serial.println(measurement.power);        
-        }
+    //--------------------------------------------------------------------
+    // 1) Receive data from RFM12
+    //--------------------------------------------------------------------
+    if (rf12_recvDone() && rf12_crc == 0 && (rf12_hdr & RF12_HDR_CTL) == 0 && rf12_len==sizeof(Payload) ) {
+        emontx=*(Payload*) rf12_data;   
+    }
         
+    if (eth.clientWaitingGw()) return;
     
-    
-    
-    
-    if (eth.clientWaitingGw())
-        return;
-    
+    //--------------------------------------------------------------------
+    // 2) Relay data on to emoncms
+    //--------------------------------------------------------------------
     if (requestTimer.poll(5000)) {
         Serial.print(">>> REQ# ");
         byte id = eth.clientTcpReq(my_result_cb, my_datafill_cb, hisport);

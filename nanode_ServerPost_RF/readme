@@ -1,0 +1,35 @@
+                             _      
+                            | |     
+ _ __   __ _ _ __   ___   __| | ___ 
+| '_ \ / _` | '_ \ / _ \ / _` |/ _ \
+| | | | (_| | | | | (_) | (_| |  __/
+|_| |_|\__,_|_| |_|\___/ \__,_|\___|
+                                    
+EMONBASE V1
+************************************
+
+This sketch relays data send from emonTX to a webserver for logging and visualisation.
+
+************************************
+Steps:
+
+1) Recieves data from emonTX in the form of a predefined struct variable:
+
+	typedef struct {
+	  int ctA;		// current transformer A
+	  int ctB;		// current transformer B
+	  int nPulse;		// number of pulses recieved since last update
+	  int temp;		// One-wire temperature A
+	} Payload;
+	Payload measurement; 
+
+        ***
+        measurement=*(Payload*) rf12_data
+
+More info: http://jeelabs.org/2010/12/08/binary-packet-decoding-%E2%80%93-part-2/
+
+2) Relays data on to emoncms
+
+3) Serve a local web page that updates status.
+
+
